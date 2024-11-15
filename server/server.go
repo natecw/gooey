@@ -25,9 +25,9 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		clients:    make(map[net.Conn]Client),
-		register:   make(chan Client, 1),
-		unregister: make(chan net.Conn, 1),
-		broadcast:  make(chan string, 1),
+		register:   make(chan Client),
+		unregister: make(chan net.Conn),
+		broadcast:  make(chan string),
 	}
 }
 
@@ -112,12 +112,13 @@ func handleConnection(server *Server, con net.Conn) {
 		msg, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("error reading connection: %v\n", err)
-			return
+			break
 		}
-		if msg != "" {
-			message := strings.TrimSpace(msg)
-			fmt.Println(message)
-			server.broadcast <- message
+		message := strings.TrimSpace(msg)
+		if message != "" {
+			formattedMsg := fmt.Sprintf("%s: %s", client.username, message)
+			fmt.Println(formattedMsg)
+			server.broadcast <- formattedMsg
 		}
 	}
 }

@@ -1,12 +1,16 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"log"
 	"net"
-	"os"
-	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
+
+type model struct {
+	input string
+}
 
 func main() {
 	con, err := net.Dial("tcp", "localhost:8080")
@@ -16,54 +20,24 @@ func main() {
 	}
 	defer con.Close()
 
-	go handleMessages(con)
-	sender(con)
-}
-
-func handleMessages(con net.Conn) {
-	scanner := bufio.NewScanner(con)
-	for scanner.Scan() {
-		msg := scanner.Text()
-		if err := scanner.Err(); err != nil {
-			fmt.Println("error reading from server", err)
-			return
-		}
-		fmt.Println(msg)
+	p := tea.NewProgram(initiate())
+	if _, err := p.Run(); err != nil {
+		log.Fatal(err)
 	}
 }
 
-func sender(con net.Conn) {
-	r := bufio.NewReader(os.Stdin)
-	fmt.Printf("username: ")
-	username, err := r.ReadString('\n')
-	if username == "" {
-		fmt.Println("username cannot be empty.")
-		return
-	}
+func initiate() model {
+	return model{input: "teehee"}
+}
 
-	if err != nil {
-		fmt.Println("error reading:", err)
-		return
-	}
+func (m model) Init() tea.Cmd {
+	return nil
+}
 
-	_, err = fmt.Fprintln(con, username)
-	if err != nil {
-		fmt.Println("error sending username", "username", username, "error", err)
-		return
-	}
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return nil, nil
+}
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		msg := scanner.Text()
-		if err := scanner.Err(); err != nil {
-			fmt.Println("error reading from server", err)
-			return
-		}
-		msg = strings.TrimSpace(msg)
-
-		_, err = fmt.Fprintf(con, "%s: %s\n", username, msg)
-		if err != nil {
-			fmt.Println("error sending message", "error=", err)
-		}
-	}
+func (m model) View() string {
+	return ""
 }
