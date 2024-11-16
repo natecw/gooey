@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 	"sync"
 )
@@ -38,7 +37,7 @@ func (s *Server) Run() {
 			s.mu.Lock()
 			s.clients[client.conn] = client
 			s.mu.Unlock()
-			msg := fmt.Sprintf("%s has joined the chat\n", client.username)
+			msg := fmt.Sprintf("%s has joined the chat", client.username)
 			fmt.Println(msg)
 			s.broadcast <- msg
 		case con := <-s.unregister:
@@ -46,7 +45,7 @@ func (s *Server) Run() {
 			client, ok := s.clients[con]
 			if ok {
 				delete(s.clients, con)
-				msg := fmt.Sprintf("%s has left the chat\n", client.username)
+				msg := fmt.Sprintf("%s has left the chat", client.username)
 				fmt.Println(msg)
 				s.broadcast <- msg
 			}
@@ -69,16 +68,16 @@ func main() {
 	server := NewServer()
 	go server.Run()
 
-	lsnr, err := net.Listen("tcp", "localhost:8080")
+	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		fmt.Println("error starting listener", "error", err)
-		os.Exit(1)
+		return
 	}
-	defer lsnr.Close()
+	defer listener.Close()
 
 	fmt.Println("Server started.")
 	for {
-		con, err := lsnr.Accept()
+		con, err := listener.Accept()
 		if err != nil {
 			fmt.Println("error accepting", "error", err)
 			continue

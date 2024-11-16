@@ -31,7 +31,7 @@ func (m message) String() string {
 }
 
 func main() {
-	con, err := net.Dial("tcp", "localhost:8080")
+	con, err := net.Dial("tcp", ":8080")
 	if err != nil {
 		fmt.Println("error connecting to server", "error=", err)
 		return
@@ -59,8 +59,7 @@ func initiate(con net.Conn) model {
 	ta.ShowLineNumbers = false
 
 	vp := viewport.New(30, 5)
-	vp.SetContent(`Welcome to the chat room!
-	Type a message and press Enter to send`)
+	vp.SetContent(`Welcome to the chat room!`)
 
 	ta.KeyMap.InsertNewline.SetEnabled(false)
 	return model{
@@ -90,7 +89,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc", ":ctrl+c":
+		case "esc", "ctrl+c":
 			fmt.Println(m.textarea.Value())
 			return m, tea.Quit
 		case "enter":
