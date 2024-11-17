@@ -31,7 +31,7 @@ func (m message) String() string {
 }
 
 func main() {
-	con, err := net.Dial("tcp", ":8080")
+	con, err := net.Dial("tcp", "localhost:8080")
 	if err != nil {
 		fmt.Println("error connecting to server", "error=", err)
 		return

@@ -26,7 +26,7 @@ func NewServer() *Server {
 		clients:    make(map[net.Conn]Client),
 		register:   make(chan Client),
 		unregister: make(chan net.Conn),
-		broadcast:  make(chan string),
+		broadcast:  make(chan string, 5),
 	}
 }
 
@@ -68,7 +68,7 @@ func main() {
 	server := NewServer()
 	go server.Run()
 
-	listener, err := net.Listen("tcp", ":8080")
+	listener, err := net.Listen("tcp", "localhost:8080")
 	if err != nil {
 		fmt.Println("error starting listener", "error", err)
 		return
@@ -92,21 +92,10 @@ func handleConnection(server *Server, con net.Conn) {
 		server.unregister <- con
 	}()
 
-	reader := bufio.NewReader(con)
-	name, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Printf("error reading username: %v\n", err)
-		return
-	}
-
-	name = strings.TrimSpace(name)
-	if name == "" {
-		name = "Anonymous"
-	}
-
-	client := Client{conn: con, username: name}
+	client := Client{conn: con, username: "Anonymous"}
 	server.register <- client
 
+	reader := bufio.NewReader(con)
 	for {
 		msg, err := reader.ReadString('\n')
 		if err != nil {
@@ -114,10 +103,51 @@ func handleConnection(server *Server, con net.Conn) {
 			break
 		}
 		message := strings.TrimSpace(msg)
-		if message != "" {
-			formattedMsg := fmt.Sprintf("%s: %s", client.username, message)
-			fmt.Println(formattedMsg)
-			server.broadcast <- formattedMsg
+		if message == "" {
+			continue
 		}
+
+		var cmd command
+		parts := strings.Split(message, " ")
+		switch parts[0] {
+		case "/username":
+			client.username = parts[1]
+			cmd = command{
+				cmd:       "/username",
+				body:      parts[1],
+				username:  client.username,
+				broadcast: false,
+			}
+		default:
+			cmd = command{
+				cmd:       "/m",
+				body:      message,
+				username:  client.username,
+				broadcast: true,
+			}
+		}
+
+		if cmd.broadcast {
+			fmt.Println(cmd.String())
+			server.broadcast <- cmd.String()
+		}
+	}
+}
+
+type command struct {
+	cmd       string
+	body      string
+	username  string
+	broadcast bool
+}
+
+func (c *command) String() string {
+	switch c.cmd {
+	case "/username":
+		return fmt.Sprintf("%s is now %s\n", c.username, c.body)
+	case "/m":
+		return fmt.Sprintf("%s: %s", c.username, c.body)
+	default:
+		return ""
 	}
 }
